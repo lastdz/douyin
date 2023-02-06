@@ -16,7 +16,7 @@ var DemoComments = []Comment{
 	{
 		Id:         1,
 		User:       DemoUser,
-		Content:    "Test Comment",
+		Content:    "Test comment",
 		CreateDate: "05-01",
 	},
 }

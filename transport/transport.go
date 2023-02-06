@@ -17,16 +17,22 @@ const (
 )
 
 type Transport struct {
-	mu         sync.Mutex
-	etcdaddrs  []string
+	Mu         sync.Mutex
+	Etcdaddrs  []string
 	XClientMap map[string]*client.XClient
 }
 
+var RpcTp Transport
+
+func init() {
+	RpcTp = Transport{sync.Mutex{}, []string{"localhost:2379"}, make(map[string]*client.XClient, 0)}
+}
+
 //给RPC增加etcd注册中心插件
-func (t *Transport) AddRegistryPlugin(s *server.Server) {
+func (t *Transport) AddRegistryPlugin(s *server.Server, ipandport string) {
 
 	r := &serverplugin.EtcdRegisterPlugin{
-		ServiceAddress: "tcp@" + "localhost:8972",  //服务器端口号
+		ServiceAddress: "tcp@" + ipandport,         //服务器端口号
 		EtcdServers:    []string{"localhost:2379"}, //etcd集群的所有ip
 		BasePath:       "/rpcx",                    //固定为/rpcx
 		Metrics:        metrics.NewRegistry(),
@@ -41,8 +47,8 @@ func (t *Transport) AddRegistryPlugin(s *server.Server) {
 
 //通过服务名获取XClient
 func (t *Transport) getxclient(servicepath string) (*client.XClient, error) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	t.Mu.Lock()
+	defer t.Mu.Unlock()
 	xclient, ok := t.XClientMap[servicepath]
 	if !ok { //找不到创建一个 重复10次 间隔一秒
 		cnt := 10
@@ -50,13 +56,13 @@ func (t *Transport) getxclient(servicepath string) (*client.XClient, error) {
 			if cnt < 0 {
 				panic("not found service")
 			}
-			d, err := etcd_client.NewEtcdDiscovery(Basepath, servicepath, t.etcdaddrs, false, nil)
+			d, err := etcd_client.NewEtcdDiscovery(Basepath, servicepath, t.Etcdaddrs, false, nil)
 			if err != nil {
 				time.Sleep(time.Second)
 				cnt--
 				continue
 			}
-			tmp := client.NewXClient("Arith", client.Failover, client.RoundRobin, d, client.DefaultOption)
+			tmp := client.NewXClient(servicepath, client.Failover, client.RoundRobin, d, client.DefaultOption)
 			t.XClientMap[servicepath] = &tmp
 			xclient = &tmp
 			break

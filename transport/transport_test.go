@@ -24,12 +24,11 @@ func (t *Arith) Mul(ctx context.Context, args *Args, reply *Reply) error {
 	reply.C = args.A + args.B
 	return nil
 }
-
 func TestCall(t *testing.T) {
 	tr := &Transport{sync.Mutex{}, []string{"localhost:2379"}, make(map[string]*client.XClient, 0)}
 	s := server.NewServer()
 	//添加etcd注册插件
-	tr.AddRegistryPlugin(s)
+	tr.AddRegistryPlugin(s, "localhost:8972")
 	//启动监听
 	go s.Serve("tcp", "localhost:8972")
 	//启动的监听名
@@ -85,7 +84,7 @@ type calltest struct {
 func TestCallconcurrently(t *testing.T) {
 	tr := &Transport{sync.Mutex{}, []string{"localhost:2379"}, make(map[string]*client.XClient, 0)}
 	s := server.NewServer()
-	tr.AddRegistryPlugin(s)
+	tr.AddRegistryPlugin(s, "localhost:8972")
 	go s.Serve("tcp", "localhost:8972")
 	//可以通过该函数注册服务
 	s.RegisterName("Arith", new(Arith), "")
@@ -118,7 +117,7 @@ func TestCallconcurrently(t *testing.T) {
 func TestDe_registername(t *testing.T) {
 	tr := &Transport{sync.Mutex{}, []string{"localhost:2379"}, make(map[string]*client.XClient, 0)}
 	s := server.NewServer()
-	tr.AddRegistryPlugin(s)
+	tr.AddRegistryPlugin(s, "localhost:8972")
 	go s.Serve("tcp", "localhost:8972")
 	go func() {
 		//等7s再注册
