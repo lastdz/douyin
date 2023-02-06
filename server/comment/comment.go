@@ -9,6 +9,7 @@ import (
 	"github.com/smallnest/rpcx/client"
 	"github.com/smallnest/rpcx/server"
 	"math/rand"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -136,6 +137,9 @@ func (ser *Commentserver) List(ctx context.Context, args *wire.ListArgs, reply *
 		comment_list[i].Content = commentdb_list[i].Content
 		comment_list[i].CreateDate = commentdb_list[i].CreateDate
 	}
+	sort.Slice(comment_list, func(i int, j int) bool {
+		return comment_list[i].CreateDate > comment_list[j].CreateDate
+	})
 	reply.Comment_List = comment_list
 	return nil
 }
