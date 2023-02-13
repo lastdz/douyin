@@ -1,6 +1,9 @@
 package controller
 
 import (
+	"context"
+	"fmt"
+	"github.com/RaymondCode/simple-demo/transport"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"sync/atomic"
@@ -38,6 +41,8 @@ func Register(c *gin.Context) {
 
 	token := username + password
 
+	err := transport.RpcTp.Call(context.Background())
+
 	if _, exist := usersLoginInfo[token]; exist {
 		c.JSON(http.StatusOK, UserLoginResponse{
 			Response: Response{StatusCode: 1, StatusMsg: "User already exist"},
@@ -62,6 +67,7 @@ func Login(c *gin.Context) {
 	password := c.Query("password")
 
 	token := username + password
+	fmt.Println("Logging in")
 
 	if user, exist := usersLoginInfo[token]; exist {
 		c.JSON(http.StatusOK, UserLoginResponse{
