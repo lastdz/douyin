@@ -14,7 +14,8 @@ import (
 )
 
 type UserServer struct {
-	tr *transport.Transport
+	tr      *transport.Transport
+	jwtServ *JwtService
 }
 
 type TestArgs struct {
@@ -24,18 +25,30 @@ type TestReply struct {
 }
 
 type RegisterArgs struct {
-	username string
-	password string
+	Username string
+	Password string
 }
 
 type RegisterReply struct {
 	StatusCode int
 	StatusMsg  string
 	UserId     int64
-	token      string
+	Token      string
 }
 
-func (sv *UserServer) Start(dbAddr string, dbUser string, dbPasswd string) {
+type TokenValidateArgs struct {
+	TokenStr string
+	Username string
+}
+
+type TokenValidateReply struct {
+	Success bool
+	Msg     string
+}
+
+func (sv *UserServer) Start(dbAddr string, dbUser string, dbPasswd string, jwtSecret string) {
+	sv.jwtServ = NewJwtService([]byte(jwtSecret))
+
 	sv.tr = &transport.Transport{sync.Mutex{}, []string{"localhost:2379"}, make(map[string]*client.XClient, 0)}
 	s := server.NewServer()
 	sv.tr.AddRegistryPlugin(s, "localhost:12306")
@@ -50,8 +63,8 @@ func (sv *UserServer) Test(ctx context.Context, args *TestArgs, reply *TestReply
 }
 
 func (sv *UserServer) Register(ctx context.Context, args *RegisterArgs, reply *RegisterReply) error {
-	hash := util.GetMd5String(args.username + args.password)
-	id, err := db.InsertUser(args.username, hash)
+	hash := util.GetMd5String(args.Username + args.Password)
+	id, err := db.InsertUser(args.Username, hash)
 	if err != nil {
 		var mysqlErr *mysql.MySQLError
 		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
@@ -65,5 +78,17 @@ func (sv *UserServer) Register(ctx context.Context, args *RegisterArgs, reply *R
 	reply.StatusCode = 0
 	reply.StatusMsg = "Register successfully"
 	reply.UserId = id
+	reply.Token, _ = sv.jwtServ.GenerateToken(args.Username)
+	return nil
+}
+
+func (sv *UserServer) ValidateToken(ctx context.Context, args *TokenValidateArgs, reply *TokenValidateReply) error {
+	err := sv.jwtServ.ValidateToken(args.TokenStr, args.Username)
+	if err != nil {
+		reply.Success = false
+		reply.Msg = err.Error()
+		return nil
+	}
+	reply.Success = true
 	return nil
 }
