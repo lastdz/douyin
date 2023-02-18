@@ -36,7 +36,7 @@ func (js *JwtService) ValidateToken(tokenStr string, username string) error {
 		if !ok {
 			return errors.New("couldn't handle this Token")
 		}
-		if claims["usr"] != username {
+		if len(username) > 0 && claims["usr"] != username {
 			return errors.New("validation failed")
 		}
 	} else if errors.Is(err, jwt.ErrTokenMalformed) {

@@ -27,3 +27,26 @@ func TestInsertUser(t *testing.T) {
 		fmt.Printf("id = %v\n", id)
 	}
 }
+
+func TestFind(t *testing.T) {
+	addr := os.Getenv("DEV_MYSQL_ADDR")
+	user := os.Getenv("DEV_MYSQL_USER")
+	passwd := os.Getenv("DEV_MYSQL_PASSWD")
+
+	GetDb(addr, user, passwd)
+
+	usr, err := ExistByNameAndPasswd("user1", "12345678")
+	if err != nil {
+		t.Error("Cannot found user1", err)
+	} else {
+		fmt.Println("found", usr.Id)
+	}
+	_, err = ExistByNameAndPasswd("user1", "123456789")
+	if err == nil {
+		t.Error("Found user1 unexpectedly")
+	}
+	_, err = ExistByNameAndPasswd("user2", "12345678")
+	if err == nil {
+		t.Error("Found user2 unexpectedly")
+	}
+}

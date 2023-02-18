@@ -7,6 +7,7 @@ import (
 	"github.com/RaymondCode/simple-demo/server/user/db"
 	"github.com/RaymondCode/simple-demo/transport"
 	"github.com/RaymondCode/simple-demo/util"
+	"github.com/RaymondCode/simple-demo/wire"
 	"github.com/go-sql-driver/mysql"
 	"github.com/smallnest/rpcx/client"
 	"github.com/smallnest/rpcx/server"
@@ -22,18 +23,6 @@ type TestArgs struct {
 }
 
 type TestReply struct {
-}
-
-type RegisterArgs struct {
-	Username string
-	Password string
-}
-
-type RegisterReply struct {
-	StatusCode int
-	StatusMsg  string
-	UserId     int64
-	Token      string
 }
 
 type TokenValidateArgs struct {
@@ -62,7 +51,7 @@ func (sv *UserServer) Test(ctx context.Context, args *TestArgs, reply *TestReply
 	return nil
 }
 
-func (sv *UserServer) Register(ctx context.Context, args *RegisterArgs, reply *RegisterReply) error {
+func (sv *UserServer) Register(ctx context.Context, args *wire.RegisterArgs, reply *wire.RegisterReply) error {
 	hash := util.GetMd5String(args.Username + args.Password)
 	id, err := db.InsertUser(args.Username, hash)
 	if err != nil {
@@ -79,6 +68,48 @@ func (sv *UserServer) Register(ctx context.Context, args *RegisterArgs, reply *R
 	reply.StatusMsg = "Register successfully"
 	reply.UserId = id
 	reply.Token, _ = sv.jwtServ.GenerateToken(args.Username)
+	return nil
+}
+
+func (sv *UserServer) Login(ctx context.Context, args *wire.LoginArgs, reply *wire.LoginReply) error {
+	hash := util.GetMd5String(args.Username + args.Password)
+	user, err := db.ExistByNameAndPasswd(args.Username, hash)
+	if err == nil {
+		reply.StatusCode = 0
+		reply.StatusMsg = "Login succeed"
+		reply.UserId = user.Id
+		reply.Token, err = sv.jwtServ.GenerateToken(user.Name)
+		if err != nil {
+			panic(err)
+		}
+		return nil
+	} else {
+		reply.StatusCode = 1
+		reply.StatusMsg = "Login failed"
+		return nil
+	}
+}
+
+func (sv *UserServer) GetUser(ctx context.Context, args *wire.GetUserArgs, reply *wire.GetUserReply) error {
+	authErr := sv.jwtServ.ValidateToken(args.Token, "")
+	if authErr != nil {
+		reply.StatusCode = 400
+		reply.StatusMsg = "Invalid token"
+		return nil
+	}
+	usr, err := db.GetById(args.UserId)
+	if err != nil {
+		reply.StatusCode = 1
+		reply.StatusMsg = fmt.Sprintf("User %v not found", args.UserId)
+		return nil
+	}
+	reply.StatusCode = 0
+	reply.StatusMsg = "Success"
+	reply.User.Id = usr.Id
+	reply.User.Name = usr.Name
+	reply.User.FollowCount = 0   // TODO 待接入关系接口
+	reply.User.FollowerCount = 0 // TODO 待接入关系接口
+	reply.User.IsFollow = false  // TODO 待接入关系接口
 	return nil
 }
 

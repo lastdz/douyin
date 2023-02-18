@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/RaymondCode/simple-demo/transport"
+	"github.com/RaymondCode/simple-demo/util"
+	"github.com/RaymondCode/simple-demo/wire"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"sync/atomic"
+	"strconv"
 )
 
 // usersLoginInfo use map to store user info, and key is username+password for demo
@@ -39,60 +41,59 @@ func Register(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
 
-	token := username + password
+	hash := util.GetMd5String(username + password)
 
-	err := transport.RpcTp.Call(context.Background())
-
-	if _, exist := usersLoginInfo[token]; exist {
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User already exist"},
-		})
-	} else {
-		atomic.AddInt64(&userIdSequence, 1)
-		newUser := User{
-			Id:   userIdSequence,
-			Name: username,
-		}
-		usersLoginInfo[token] = newUser
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 0},
-			UserId:   userIdSequence,
-			Token:    username + password,
-		})
+	args := &wire.RegisterArgs{
+		Username: username,
+		Password: hash,
 	}
+	reply := &wire.RegisterReply{}
+
+	err := transport.RpcTp.Call(context.Background(), "user", "Register", args, reply)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+	c.JSON(http.StatusOK, reply)
 }
 
 func Login(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
 
-	token := username + password
+	hash := util.GetMd5String(username + password)
 	fmt.Println("Logging in")
 
-	if user, exist := usersLoginInfo[token]; exist {
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 0},
-			UserId:   user.Id,
-			Token:    token,
-		})
-	} else {
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
-		})
+	args := &wire.LoginArgs{
+		Username: username,
+		Password: hash,
 	}
+	reply := &wire.LoginReply{}
+
+	err := transport.RpcTp.Call(context.Background(), "user", "Login", args, reply)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+	c.JSON(http.StatusOK, reply)
 }
 
 func UserInfo(c *gin.Context) {
+	uid, err := strconv.Atoi(c.Query("user_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "Invalid user id")
+	}
 	token := c.Query("token")
 
-	if user, exist := usersLoginInfo[token]; exist {
-		c.JSON(http.StatusOK, UserResponse{
-			Response: Response{StatusCode: 0},
-			User:     user,
-		})
-	} else {
-		c.JSON(http.StatusOK, UserResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
-		})
+	args := &wire.GetUserArgs{
+		UserId: int64(uid),
+		Token:  token,
 	}
+	reply := &wire.GetUserReply{}
+	err = transport.RpcTp.Call(context.Background(), "user", "GetUser", args, reply)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+	c.JSON(http.StatusOK, reply)
 }

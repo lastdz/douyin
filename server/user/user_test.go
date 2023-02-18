@@ -21,5 +21,7 @@ func TestStart(t *testing.T) {
 	addr := os.Getenv("DEV_MYSQL_ADDR")
 	user := os.Getenv("DEV_MYSQL_USER")
 	passwd := os.Getenv("DEV_MYSQL_PASSWD")
-	server.Start(addr, user, passwd)
+
+	token := "SampleSecret114514"
+	server.Start(addr, user, passwd, token)
 }
