@@ -76,3 +76,23 @@ type MessagePushEvent struct {
 	FromUserId int64  `json:"user_id,omitempty"`
 	MsgContent string `json:"msg_content,omitempty"`
 }
+
+// 关系操作
+type RelationActionArgs struct {
+	Token       string
+	To_user_id  string
+	Action_type string
+}
+type RelationActionReply struct {
+	StatusCode int32  `json:"status_code"`
+	StatusMsg  string `json:"status_msg,omitempty"`
+}
+type RelationListArgs struct {
+	Token   string
+	User_id string
+}
+type RelationListReply struct {
+	StatusCode int32  `json:"status_code"`
+	StatusMsg  string `json:"status_msg,omitempty"`
+	User_list  []User `json:"user_list"`
+}
