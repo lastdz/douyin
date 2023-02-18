@@ -9,6 +9,39 @@ type CommentActionResponse struct {
 	Response
 	Comment Comment `json:"comment,omitempty"`
 }
+
+type RegisterArgs struct {
+	Username string
+	Password string
+}
+
+type RegisterReply struct {
+	Response
+	UserId int64
+	Token  string
+}
+
+type LoginArgs struct {
+	Username string
+	Password string
+}
+
+type LoginReply struct {
+	Response
+	UserId int64
+	Token  string
+}
+
+type GetUserArgs struct {
+	UserId int64
+	Token  string
+}
+
+type GetUserReply struct {
+	Response
+	User User `json:"user,omitempty"`
+}
+
 type ActionArgs struct {
 	Token        string
 	Video_id     string
