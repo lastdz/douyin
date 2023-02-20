@@ -129,3 +129,25 @@ type RelationListReply struct {
 	StatusMsg  string `json:"status_msg,omitempty"`
 	User_list  []User `json:"user_list"`
 }
+
+// 消息操作
+type MessageActionArgs struct {
+	Token      string `json:"token"`
+	ToUserId   int    `json:"to_user_id"`
+	ActionType string `json:"action_type"`
+	Content    string `json:"content"`
+}
+type MessageActionReply struct {
+	StatusCode    int     `json:"status_code"`
+	StatusMessage string  `json:"status_message"`
+	Message       Message `json:"message"`
+}
+type MessageListArgs struct {
+	Token  string `json:"token"`
+	UserId int64  `json:"user_id"`
+}
+type MessageListReply struct {
+	StatusCode    int       `json:"status_code"`
+	StatusMessage string    `json:"status_message"`
+	MessageList   []Message `json:"message_list"`
+}

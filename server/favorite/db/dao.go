@@ -6,7 +6,8 @@ func Favorite(fav *FavoriteDb) error {
 }
 func UnFavorite(fav *FavoriteDb) error {
 	tx := mydb.Delete(&FavoriteDb{
-		token: fav.token,
+		Token:    fav.Token,
+		Video_id: fav.Video_id,
 	})
 	return tx.Error
 }
